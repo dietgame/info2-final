@@ -1,11 +1,13 @@
 import pyxel#ライブラリ
 
+ITEMS_OK = [2, 7, 8, 10, 11, 12, 13]
+
 class Ball:
    
     def __init__(self, fs):
         self.field_size = fs
         self.restart()
-        self.speed = 2
+        self.speed = 1.5
        
     def move(self):
         self.x += self.vx * self.speed
@@ -25,13 +27,13 @@ class Pad:
     def __init__(self, fs):
         self.field_size = fs#変数
         self.x = self.field_size / 2 #field_sizeは全体サイズ、半分に割ることで全体のちょうど真ん中に持ってこれる
-        self.size = self.field_size / 5#5は適当な数、パッドの大きさを定義付けている
+        self.size = 23 #5は適当な数、パッドの大きさを定義付けている
 
     def catch(self, ball): #受け取れたらTrue, そうでなければFalseを返す
         if ball.y >= self.field_size-self.field_size/40 and (self.x-self.size/2 <= ball.x <= self.x+self.size/2):
             #self.sizeの割る２してself.xを引くと、全体の真ん中の位置を指定できる（逆に足すと端を指定できる）
 #            return True
-            if ball.type == 2 or ball.type == 7 or ball.type == 8 or ball.type == 10 or ball.type == 11 or ball.type == 12 or ball.type == 13: #small rice
+            if ball.type in ITEMS_OK: #small rice
                 pyxel.play(0, 0) # 成功
                 ball.restart()
                 return True
@@ -45,14 +47,15 @@ class Pad:
 class App: #本体
     def __init__ (self): 
         self.field_size = 150
-
         pyxel.init(self.field_size,self.field_size)#initは初期化
         pyxel.load('my_resource.pyxres')
+        pyxel.sound(0).set(notes='E4C4', tones='TT', volumes='33', effects='NN', speed=15)
+        pyxel.sound(1).set(notes='G1', tones='N', volumes='3', effects='N', speed=20)
+        self.game_start()
+        pyxel.run(self.update, self.draw)
 
-        pyxel.sound(0).set(notes='A2C3', tones='TT', volumes='33', effects='NN', speed=10)
-        pyxel.sound(1).set(notes='C2', tones='N', volumes='3', effects='S', speed=30)
-
-
+        
+    def game_start(self):
         self.balls = [Ball(self.field_size)]
         self.pad = Pad(self.field_size)
         self.alive = True
@@ -60,10 +63,10 @@ class App: #本体
         self.receive = 0
         self.score = 0
 
-        pyxel.run(self.update, self.draw)
-
     def update(self):##ボールの動きを処理
         if not self.alive:
+            if pyxel.btnp(pyxel.KEY_SPACE):
+                self.game_start()
             return
         self.pad.x = pyxel.mouse_x
         for b in self.balls:
@@ -71,17 +74,18 @@ class App: #本体
         
             if self.pad.catch(b): #受け取れたら（受け取れた時の処理）
                 b.restart()
-                b.speed += 0.2
+                b.speed += 0.1
                 self.score += 1
                 self.receive += 1
                 if self.receive >= 10:
                     b.speed = 2
                     self.receive = 0
                     self.balls.append(Ball(self.field_size))
-    
-        
+                if b.type == 14:
+                    self.score -= 3 #焼き芋をキャッチすると３点引かれる
+
             elif b.y >= self.field_size: #落とした
-                if b.type == 2 or b.type == 7 or b.type == 8 or b.type == 10 or b.type == 11 or b.type == 12 or b.type == 13: # 食べていいものだと失敗
+                if b.type in ITEMS_OK: # 食べていいものだと失敗
                     pyxel.play(0, 1)
                     b.restart()
                     b.speed += 0.2
@@ -95,6 +99,7 @@ class App: #本体
     def draw(self):
         if self.alive:
             pyxel.cls(0) #背景色
+            pyxel.bltm(0, 0, 0, 0, 0, 150, 150)
             for b in self.balls:
                 #pyxel.circ(b.x, b.y, self.field_size/20, 6)
                 if b.type == 0: #pudding NG
@@ -130,10 +135,10 @@ class App: #本体
                 
                 
                 
-            pyxel.blt(self.pad.x-self.pad.size/2,self.field_size-16,0,48,48,16,16)
+            pyxel.blt(self.pad.x-self.pad.size/2,self.field_size-16,0,48,48,16,16, 10)
             #pyxel.rect(self.pad.x-self.pad.size/2, self.field_size-self.field_size/40, self.pad.size, 5, 14)
-            pyxel.text(5, 5, "score: " + str(self.score) + "  remaining lives: " + str(self.life), 7)
+            pyxel.text(5, 5, "score: " + str(self.score) + "  remaining lives: " + str(self.life), 0)
         else:
-            pyxel.text(self.field_size/2-20, self.field_size/2-20, "Game Over!!!", 7)
+            pyxel.text(self.field_size/2-20, self.field_size/2-20, "Game Over!!!\nSPACE TO RESTART", 7)
 
 App()
